@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Name kept from the capability probe on purpose: renaming changes the
+  // workers.dev URL and breaks the PWA already installed on test devices.
+  "name": "split-probe",
+  "main": "./src/api/index.ts",
+  "compatibility_date": "2026-08-22",
+  "observability": { "enabled": true },
+  "vars": { "TELEGRAM_BOT_USERNAME": "kharchapecharchabot" },
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "kharcha-db",
+      "database_id": "20f1bedc-582a-4a21-a3d6-1305961772d1",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "r2_buckets": [
+    { "binding": "SHOTS", "bucket_name": "kharcha-shots" }
+  ]
+}

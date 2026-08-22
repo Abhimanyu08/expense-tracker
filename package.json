@@ -1,0 +1,47 @@
+{
+  "name": "kharcha",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Screenshot-first expense tracking",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "deploy": "vite build && wrangler deploy",
+    "typecheck": "tsc -b",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply kharcha-db --local",
+    "db:migrate": "wrangler d1 migrations apply kharcha-db --remote",
+    "cf-typegen": "wrangler types",
+    "icons": "python3 scripts/gen-icons.py",
+    "tail": "wrangler tail",
+    "tg:set": "./scripts/tg-webhook.sh set",
+    "tg:info": "./scripts/tg-webhook.sh info"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.53.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.4",
+    "@vitejs/plugin-react": "^6.1.0",
+    "drizzle-kit": "^0.31.10",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.2.2",
+    "wrangler": "^4.125.0"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.101.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "drizzle-orm": "^0.45.2",
+    "hono": "^4.13.3",
+    "lucide-react": "^1.33.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router": "^8.3.0",
+    "tailwind-merge": "^3.6.0"
+  },
+  "type": "module"
+}

@@ -1,0 +1,23 @@
+export type PublicUser = {
+  id: string
+  name: string
+  phone: string
+  telegramLinked: boolean
+  telegramUsername: string | null
+}
+
+export type ScreenshotDTO = {
+  id: string
+  source: 'upload' | 'share-target' | 'telegram'
+  contentType: string
+  size: number
+  createdAt: number
+  width: number | null
+  height: number | null
+  imageUrl: string
+}
+
+export type TelegramLink = {
+  url: string
+  expiresAt: number
+}

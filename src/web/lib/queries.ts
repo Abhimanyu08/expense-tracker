@@ -1,0 +1,82 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { api } from './api'
+
+export const meKey = ['me'] as const
+export const screenshotsKey = ['screenshots'] as const
+
+export function useMe() {
+  return useQuery({
+    queryKey: meKey,
+    queryFn: () => api.me().then((r) => r.user),
+    staleTime: 60_000,
+    retry: false,
+    // The Telegram link is completed in another app, so re-check on return.
+    refetchOnWindowFocus: true,
+  })
+}
+
+export function useLogin() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ phone, password }: { phone: string; password: string }) =>
+      api.login(phone, password),
+    onSuccess: ({ user }) => qc.setQueryData(meKey, user),
+  })
+}
+
+export function useSignup() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ phone, name, password }: { phone: string; name: string; password: string }) =>
+      api.signup(phone, name, password),
+    onSuccess: ({ user }) => qc.setQueryData(meKey, user),
+  })
+}
+
+export function useLogout() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.logout(),
+    onSuccess: () => {
+      qc.setQueryData(meKey, null)
+      qc.removeQueries({ queryKey: screenshotsKey })
+    },
+  })
+}
+
+export function useScreenshots(enabled: boolean) {
+  return useQuery({
+    queryKey: screenshotsKey,
+    queryFn: () => api.listScreenshots().then((r) => r.screenshots),
+    enabled,
+  })
+}
+
+export function useUpload() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (files: File[]) =>
+      Promise.all(files.map((f) => api.uploadScreenshot(f, 'upload', f.name))),
+    onSuccess: () => qc.invalidateQueries({ queryKey: screenshotsKey }),
+  })
+}
+
+export function useTelegramLink() {
+  return useMutation({ mutationFn: () => api.telegramLink() })
+}
+
+export function useTelegramUnlink() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => api.telegramUnlink(),
+    onSuccess: () => qc.invalidateQueries({ queryKey: meKey }),
+  })
+}
+
+export function useDeleteScreenshot() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) => api.deleteScreenshot(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: screenshotsKey }),
+  })
+}
