@@ -40,10 +40,21 @@ export const api = {
 
   listScreenshots: () => request<{ screenshots: ScreenshotDTO[] }>('/api/screenshots'),
 
-  uploadScreenshot: (file: Blob, source: 'upload' | 'share-target', filename = 'screenshot') => {
+  uploadScreenshot: (
+    file: Blob,
+    source: 'upload' | 'share-target',
+    filename = 'screenshot',
+    dimensions?: { width: number | null; height: number | null },
+  ) => {
     const form = new FormData()
     form.append('image', file, filename)
     form.append('source', source)
+    // The browser already decoded the image to downscale it, so pass the real
+    // dimensions along rather than making the server re-derive them.
+    if (dimensions?.width && dimensions?.height) {
+      form.append('width', String(dimensions.width))
+      form.append('height', String(dimensions.height))
+    }
     return request<{ screenshot: ScreenshotDTO }>('/api/screenshots', {
       method: 'POST',
       body: form,

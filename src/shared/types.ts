@@ -6,7 +6,7 @@ export type PublicUser = {
   telegramUsername: string | null
 }
 
-export type ParseStatus = 'pending' | 'processing' | 'done' | 'failed'
+export type ParseStatus = 'pending' | 'processing' | 'done' | 'no_payment' | 'failed'
 
 export type ScreenshotDTO = {
   id: string

@@ -20,6 +20,10 @@
     },
   ],
   "r2_buckets": [{ "binding": "SHOTS", "bucket_name": "kharcha-shots" }],
+  // remote:true so `vite dev` proxies to the real Workers AI service -- there is
+  // no local model runner, and inference counts against the daily Neuron
+  // allocation either way.
+  "ai": { "binding": "AI", "remote": true },
   "queues": {
     "producers": [{ "queue": "kharcha-parse", "binding": "PARSE_QUEUE" }],
     "consumers": [

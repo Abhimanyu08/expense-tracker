@@ -1,7 +1,10 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    // ESNext.TypedArrays for Uint8Array.prototype.toBase64 -- a native
+    // single-pass encoder, vs a chunked String.fromCharCode loop that builds a
+    // multi-megabyte intermediate string on a 10ms CPU budget.
+    "lib": ["ES2022", "ESNext.TypedArrays"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "strict": true,

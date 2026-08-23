@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Clock, ImageOff, Loader2, LogOut, Plus, Trash2, TriangleAlert } from 'lucide-react'
+import { Ban, Clock, ImageOff, Loader2, LogOut, Plus, Trash2, TriangleAlert } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Badge } from '@/web/components/ui/badge'
 import { Button } from '@/web/components/ui/button'
@@ -49,6 +49,7 @@ const PARSE_BADGE: Partial<
 > = {
   pending: { label: 'Queued', variant: 'secondary', icon: Clock },
   processing: { label: 'Parsing', variant: 'default', icon: Loader2 },
+  no_payment: { label: 'Not a payment', variant: 'outline', icon: Ban },
   failed: { label: 'Failed', variant: 'destructive', icon: TriangleAlert },
 }
 

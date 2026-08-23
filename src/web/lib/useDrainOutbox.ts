@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { ApiError, api } from './api'
+import { prepareForUpload } from './downscale'
 import { outbox } from './outbox'
 import { screenshotsKey } from './queries'
 
@@ -24,7 +25,8 @@ export function useDrainOutbox(enabled: boolean) {
         let uploaded = 0
         for (const item of items) {
           try {
-            await api.uploadScreenshot(item.blob, 'share-target', item.name)
+            const { blob, width, height } = await prepareForUpload(item.blob)
+            await api.uploadScreenshot(blob, 'share-target', item.name, { width, height })
             await outbox.remove(item.id)
             uploaded++
           } catch (err) {

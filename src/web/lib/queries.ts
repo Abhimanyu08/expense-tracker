@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
+import { prepareForUpload } from './downscale'
 
 export const meKey = ['me'] as const
 export const screenshotsKey = ['screenshots'] as const
@@ -64,7 +65,12 @@ export function useUpload() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (files: File[]) =>
-      Promise.all(files.map((f) => api.uploadScreenshot(f, 'upload', f.name))),
+      Promise.all(
+        files.map(async (f) => {
+          const { blob, width, height } = await prepareForUpload(f)
+          return api.uploadScreenshot(blob, 'upload', f.name, { width, height })
+        }),
+      ),
     onSuccess: () => qc.invalidateQueries({ queryKey: screenshotsKey }),
   })
 }

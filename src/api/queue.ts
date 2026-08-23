@@ -1,12 +1,16 @@
 import { and, asc, eq, inArray, lt } from 'drizzle-orm'
 import { db } from './db'
 import { screenshots } from './db/schema'
+import { AiUnavailableError } from './lib/ai'
+import { deleteScreenshot } from './lib/store'
 import {
   MAX_PARSE_ATTEMPTS,
   claimForParse,
-  markParsed,
+  failParse,
+  markNoPayment,
   releaseParse,
   runParse,
+  savePaymentAndMarkParsed,
   type ParseMessage,
 } from './lib/parse'
 
@@ -24,10 +28,40 @@ export async function handleParseBatch(batch: MessageBatch<ParseMessage>, env: E
         message.ack()
         continue
       }
-      await runParse(env, shot)
-      await markParsed(env, screenshotId)
+
+      const outcome = await runParse(env, shot)
+      if (outcome.kind === 'payment') {
+        const saved = await savePaymentAndMarkParsed(env, shot, outcome.payment)
+        if (saved.kind === 'duplicate') {
+          /* This exact transaction is already on the ledger from a different
+           * screenshot -- shared to the PWA and also sent to the bot, say.
+           * Discard the redundant image rather than leave a screenshot that
+           * maps to no payment and would look like a parse failure. */
+          console.log('duplicate payment, discarding screenshot', shot.id, saved.ofPaymentId)
+          await deleteScreenshot(env, shot)
+        }
+      } else if (outcome.kind === 'no_payment') {
+        await markNoPayment(env, screenshotId)
+      } else {
+        /* Terminal, not retried. The model answered and the answer is
+         * unusable; at temperature 0.1 the same pixels produce the same
+         * garbage, so a retry only spends Neurons. The reason lands in
+         * parse_error where it can be read. */
+        console.warn('parse unusable', screenshotId, outcome.reason)
+        await failParse(env, screenshotId, outcome.reason)
+      }
       message.ack()
     } catch (err) {
+      if (err instanceof AiUnavailableError) {
+        /* The service, not the screenshot. Ack rather than retry: the row goes
+         * back to 'pending' and the cron sweep owns bringing it back, whereas
+         * retrying would burn all three queue retries against an outage that
+         * can last until 00:00 UTC and then drop the message into the DLQ. */
+        console.error('ai unavailable', screenshotId, err.message)
+        await releaseParse(env, screenshotId, err.message, { refundAttempt: err.refundAttempt })
+        message.ack()
+        continue
+      }
       const reason = err instanceof Error ? err.message : String(err)
       console.error('parse failed', screenshotId, reason)
       await releaseParse(env, screenshotId, reason)

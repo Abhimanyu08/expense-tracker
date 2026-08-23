@@ -3,7 +3,7 @@ import { and, desc, eq } from 'drizzle-orm'
 import { db } from '../db'
 import { screenshots, type Screenshot } from '../db/schema'
 import { requireUser } from '../middleware/auth'
-import { storeScreenshot, toDTO } from '../lib/store'
+import { deleteScreenshot, storeScreenshot, toDTO } from '../lib/store'
 import type { AppEnv } from '../types'
 
 const route = new Hono<AppEnv>()
@@ -26,7 +26,17 @@ route.post('/', async (c) => {
 
   const source: Screenshot['source'] =
     form?.get('source') === 'share-target' ? 'share-target' : 'upload'
-  const result = await storeScreenshot(c.env, c.get('user').id, file, source)
+
+  // The browser decoded the image to downscale it, so it can tell us the real
+  // dimensions. Absent or junk values just leave the columns null.
+  const width = Number(form?.get('width'))
+  const height = Number(form?.get('height'))
+  const dimensions =
+    Number.isInteger(width) && Number.isInteger(height) && width > 0 && height > 0
+      ? { width, height }
+      : undefined
+
+  const result = await storeScreenshot(c.env, c.get('user').id, file, source, dimensions)
   if (!result.ok) return c.json({ error: result.error }, result.status)
   return c.json({ screenshot: toDTO(result.row) }, 201)
 })
@@ -65,8 +75,7 @@ route.get('/:id/image', async (c) => {
 route.delete('/:id', async (c) => {
   const row = await ownedRow(c)
   if (!row) return c.json({ error: 'Not found' }, 404)
-  await c.env.SHOTS.delete(row.r2Key)
-  await db(c.env.DB).delete(screenshots).where(eq(screenshots.id, row.id))
+  await deleteScreenshot(c.env, row)
   return c.json({ ok: true })
 })
 

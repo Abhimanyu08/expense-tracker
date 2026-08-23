@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm'
 import { db } from '../db'
 import { screenshots, type Screenshot } from '../db/schema'
 import { enqueueParse } from './parse'
@@ -85,4 +86,11 @@ export async function storeScreenshot(
   }
 
   return { ok: true, row }
+}
+
+/** Removes the bytes and the row together. Shared by the delete route and the
+ * parse consumer, which discards a screenshot that duplicates a known payment. */
+export async function deleteScreenshot(env: Env, row: Pick<Screenshot, 'id' | 'r2Key'>) {
+  await env.SHOTS.delete(row.r2Key)
+  await db(env.DB).delete(screenshots).where(eq(screenshots.id, row.id))
 }

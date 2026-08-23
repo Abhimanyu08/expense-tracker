@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
@@ -24,7 +24,7 @@ export const sessions = sqliteTable(
   (t) => [index('sessions_user_idx').on(t.userId)],
 )
 
-export const PARSE_STATUSES = ['pending', 'processing', 'done', 'failed'] as const
+export const PARSE_STATUSES = ['pending', 'processing', 'done', 'no_payment', 'failed'] as const
 export type ParseStatus = (typeof PARSE_STATUSES)[number]
 
 export const screenshots = sqliteTable(
@@ -102,5 +102,63 @@ export const telegramAlbums = sqliteTable('telegram_albums', {
   createdAt: integer('created_at').notNull(),
 })
 
+export const PAYMENT_MODES = ['screenshot', 'manual'] as const
+export type PaymentMode = (typeof PAYMENT_MODES)[number]
+
+export const PAYMENT_STATUSES = ['approved', 'pending_approval', 'rejected'] as const
+export type PaymentStatus = (typeof PAYMENT_STATUSES)[number]
+
+export const payments = sqliteTable(
+  'payments',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    /* Integer paise, never a float. SQLite has no decimal type, and splitting
+     * an expense divides this number -- 10000/3 gives exact paise, 100.0/3
+     * does not. Divide by 100 at the edge, never in storage. */
+    amount: integer('amount').notNull(),
+    payee: text('payee'),
+    notes: text('notes'),
+    /* When the payment happened per the receipt, not when we saw it. Epoch ms
+     * UTC: the model reports a naive Asia/Kolkata wall clock and the +5:30 is
+     * applied during extraction, so nothing downstream has to know. Falls back
+     * to the screenshot's createdAt, so it is never null. */
+    paidAt: integer('paid_at').notNull(),
+    /* Unique, and that is load-bearing rather than tidy. Queues deliver at
+     * least once and the sweep reclaims a stalled 'processing' after 16
+     * minutes, so a consumer that wrote this row and then died gets re-parsed
+     * -- without the constraint that silently doubles the expense. It also
+     * makes a deliberate re-parse replace rather than duplicate. SQLite treats
+     * NULLs as distinct under UNIQUE, so manual rows are unaffected.
+     *
+     * set null, not cascade: deleting a screenshot to reclaim R2 should not
+     * quietly delete an expense from the ledger. `mode` preserves provenance. */
+    screenshotId: text('screenshot_id')
+      .references(() => screenshots.id, { onDelete: 'set null' })
+      .unique(),
+    /* The payment provider's own identifier -- the UPI transaction ID on GPay,
+     * PhonePe and Paytm. screenshotId identifies the IMAGE; this identifies the
+     * PAYMENT, so the same transaction captured twice (shared to the PWA and
+     * also sent to the bot) collapses to one row instead of double-counting.
+     * Null when the model could not read one, or for manual entry. */
+    uniqueId: text('unique_id'),
+    mode: text('mode', { enum: PAYMENT_MODES }).notNull(),
+    status: text('status', { enum: PAYMENT_STATUSES }).notNull(),
+    createdAt: integer('created_at').notNull(),
+  },
+  (t) => [
+    index('payments_user_paid_idx').on(t.userId, t.paidAt),
+    /* Scoped to the user, not global. A UPI transaction ID is globally unique,
+     * but both sides of a peer-to-peer payment can legitimately screenshot it
+     * -- the payer sees "To B", the payee sees "From A" -- and a global
+     * constraint would reject the second person's own record. SQLite treats
+     * NULLs as distinct, so manual rows are unconstrained. */
+    uniqueIndex('payments_user_unique_idx').on(t.userId, t.uniqueId),
+  ],
+)
+
 export type User = typeof users.$inferSelect
 export type Screenshot = typeof screenshots.$inferSelect
+export type Payment = typeof payments.$inferSelect
