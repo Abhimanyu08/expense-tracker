@@ -26,7 +26,7 @@ export function AuthShell({
           </CardHeader>
           <CardContent>{children}</CardContent>
         </Card>
-        <p className="mt-5 text-center text-sm text-muted-foreground">{footer}</p>
+        <p className="text-muted-foreground mt-5 text-center text-sm">{footer}</p>
       </div>
     </div>
   )
@@ -35,7 +35,7 @@ export function AuthShell({
 export function FormError({ message }: { message?: string }) {
   if (!message) return null
   return (
-    <p role="alert" className="rounded-md bg-destructive/15 px-3 py-2 text-sm text-destructive">
+    <p role="alert" className="bg-destructive/15 text-destructive rounded-md px-3 py-2 text-sm">
       {message}
     </p>
   )

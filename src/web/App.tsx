@@ -8,7 +8,11 @@ export default function App() {
   const me = useMe()
 
   if (me.isLoading) {
-    return <div className="flex min-h-dvh items-center justify-center text-sm text-muted-foreground">Loading…</div>
+    return (
+      <div className="text-muted-foreground flex min-h-dvh items-center justify-center text-sm">
+        Loading…
+      </div>
+    )
   }
 
   if (!me.data) {

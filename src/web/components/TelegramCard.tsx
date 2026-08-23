@@ -11,12 +11,12 @@ export function TelegramCard({ user }: { user: PublicUser }) {
 
   if (user.telegramLinked) {
     return (
-      <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border bg-card px-4 py-3">
+      <div className="bg-card mb-4 flex items-center justify-between gap-3 rounded-xl border px-4 py-3">
         <div className="flex min-w-0 items-center gap-2.5">
-          <Check className="size-4 shrink-0 text-primary" />
+          <Check className="text-primary size-4 shrink-0" />
           <div className="min-w-0">
             <p className="text-sm font-medium">Telegram connected</p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-muted-foreground truncate text-xs">
               {user.telegramUsername ? `@${user.telegramUsername}` : 'Send screenshots to the bot'}
             </p>
           </div>
@@ -24,7 +24,7 @@ export function TelegramCard({ user }: { user: PublicUser }) {
         <Button
           variant="ghost"
           size="sm"
-          className="shrink-0 text-muted-foreground"
+          className="text-muted-foreground shrink-0"
           disabled={unlink.isPending}
           onClick={() => unlink.mutate()}
         >
@@ -35,12 +35,12 @@ export function TelegramCard({ user }: { user: PublicUser }) {
   }
 
   return (
-    <div className="mb-4 rounded-xl border bg-card px-4 py-3.5">
+    <div className="bg-card mb-4 rounded-xl border px-4 py-3.5">
       <div className="flex items-center gap-2.5">
-        <Send className="size-4 shrink-0 text-primary" />
+        <Send className="text-primary size-4 shrink-0" />
         <p className="text-sm font-medium">Connect Telegram</p>
       </div>
-      <p className="mt-1.5 text-xs text-muted-foreground">
+      <p className="text-muted-foreground mt-1.5 text-xs">
         iOS cannot share into a web app. Send screenshots to the bot instead and they land here.
       </p>
       <div className="mt-3 flex flex-wrap gap-2">
@@ -65,7 +65,7 @@ export function TelegramCard({ user }: { user: PublicUser }) {
           Already did it
         </Button>
       </div>
-      {link.error && <p className="mt-2 text-xs text-destructive">{link.error.message}</p>}
+      {link.error && <p className="text-destructive mt-2 text-xs">{link.error.message}</p>}
     </div>
   )
 }

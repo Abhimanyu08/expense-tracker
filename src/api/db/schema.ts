@@ -24,6 +24,9 @@ export const sessions = sqliteTable(
   (t) => [index('sessions_user_idx').on(t.userId)],
 )
 
+export const PARSE_STATUSES = ['pending', 'processing', 'done', 'failed'] as const
+export type ParseStatus = (typeof PARSE_STATUSES)[number]
+
 export const screenshots = sqliteTable(
   'screenshots',
   {
@@ -41,8 +44,23 @@ export const screenshots = sqliteTable(
     width: integer('width'),
     height: integer('height'),
     createdAt: integer('created_at').notNull(),
+
+    /* Parse pipeline state. This is not just a UI flag -- it is the
+     * idempotency key. Queues deliver at least once, so the consumer claims
+     * work with a conditional UPDATE off 'pending' rather than checking and
+     * then writing, and a redelivery of the same message finds nothing to
+     * claim. */
+    parseStatus: text('parse_status', { enum: PARSE_STATUSES }).notNull().default('pending'),
+    // When parseStatus last changed. Lets the sweep tell a screenshot enqueued
+    // a second ago from one that has been 'pending' since the send() failed.
+    parseStatusAt: integer('parse_status_at').notNull().default(0),
+    parseAttempts: integer('parse_attempts').notNull().default(0),
+    parseError: text('parse_error'),
   },
-  (t) => [index('screenshots_user_created_idx').on(t.userId, t.createdAt)],
+  (t) => [
+    index('screenshots_user_created_idx').on(t.userId, t.createdAt),
+    index('screenshots_parse_idx').on(t.parseStatus, t.parseStatusAt),
+  ],
 )
 
 // Coarse abuse brake for signup/login. Not a general-purpose limiter -- it

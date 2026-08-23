@@ -49,6 +49,14 @@ export function useScreenshots(enabled: boolean) {
     queryKey: screenshotsKey,
     queryFn: () => api.listScreenshots().then((r) => r.screenshots),
     enabled,
+    refetchOnWindowFocus: true,
+    /* Parsing finishes on a queue consumer, which has no way to tell the page.
+     * Poll, but only while something is actually in flight -- an idle list
+     * should not be hitting the API every few seconds forever. */
+    refetchInterval: (query) =>
+      query.state.data?.some((s) => s.parseStatus === 'pending' || s.parseStatus === 'processing')
+        ? 2_000
+        : false,
   })
 }
 

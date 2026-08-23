@@ -6,6 +6,8 @@ export type PublicUser = {
   telegramUsername: string | null
 }
 
+export type ParseStatus = 'pending' | 'processing' | 'done' | 'failed'
+
 export type ScreenshotDTO = {
   id: string
   source: 'upload' | 'share-target' | 'telegram'
@@ -14,6 +16,7 @@ export type ScreenshotDTO = {
   createdAt: number
   width: number | null
   height: number | null
+  parseStatus: ParseStatus
   imageUrl: string
 }
 

@@ -5,7 +5,7 @@ function Label({ className, ...props }: React.ComponentProps<'label'>) {
   return (
     <label
       className={cn(
-        'flex select-none items-center gap-2 text-sm font-medium leading-none',
+        'flex items-center gap-2 text-sm leading-none font-medium select-none',
         className,
       )}
       {...props}

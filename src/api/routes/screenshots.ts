@@ -24,7 +24,8 @@ route.post('/', async (c) => {
   const file = form?.get('image')
   if (!(file instanceof File)) return c.json({ error: 'Expected an "image" file field' }, 400)
 
-  const source: Screenshot['source'] = form?.get('source') === 'share-target' ? 'share-target' : 'upload'
+  const source: Screenshot['source'] =
+    form?.get('source') === 'share-target' ? 'share-target' : 'upload'
   const result = await storeScreenshot(c.env, c.get('user').id, file, source)
   if (!result.ok) return c.json({ error: result.error }, result.status)
   return c.json({ screenshot: toDTO(result.row) }, 201)
@@ -34,7 +35,9 @@ async function ownedRow(c: Context<AppEnv>) {
   const rows = await db(c.env.DB)
     .select()
     .from(screenshots)
-    .where(and(eq(screenshots.id, c.req.param('id') ?? ''), eq(screenshots.userId, c.get('user').id)))
+    .where(
+      and(eq(screenshots.id, c.req.param('id') ?? ''), eq(screenshots.userId, c.get('user').id)),
+    )
     .limit(1)
   return rows[0] ?? null
 }

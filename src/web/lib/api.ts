@@ -44,7 +44,10 @@ export const api = {
     const form = new FormData()
     form.append('image', file, filename)
     form.append('source', source)
-    return request<{ screenshot: ScreenshotDTO }>('/api/screenshots', { method: 'POST', body: form })
+    return request<{ screenshot: ScreenshotDTO }>('/api/screenshots', {
+      method: 'POST',
+      body: form,
+    })
   },
 
   deleteScreenshot: (id: string) =>

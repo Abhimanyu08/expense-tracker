@@ -1,7 +1,11 @@
 {
   "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.worker.json" }
-  ]
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.worker.json" }],
+  // Not used for compilation -- `tsc -b` builds the referenced projects, which
+  // carry their own paths. This exists so the shadcn CLI can resolve the
+  // "@/web/components/ui" alias in components.json; without it, `shadcn add`
+  // silently writes into a literal ./@ directory.
+  "compilerOptions": {
+    "paths": { "@/*": ["./src/*"] }
+  }
 }

@@ -24,7 +24,7 @@ export default function Signup() {
       footer={
         <>
           Already registered?{' '}
-          <Link to="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+          <Link to="/login" className="text-primary font-medium underline-offset-4 hover:underline">
             Sign in
           </Link>
         </>
@@ -65,7 +65,7 @@ export default function Signup() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
-          <p className="text-xs text-muted-foreground">At least 8 characters.</p>
+          <p className="text-muted-foreground text-xs">At least 8 characters.</p>
         </div>
         <FormError message={signup.error?.message} />
         <Button type="submit" disabled={signup.isPending} className="mt-1">

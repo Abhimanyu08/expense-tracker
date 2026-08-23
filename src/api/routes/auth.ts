@@ -28,7 +28,9 @@ auth.post('/signup', async (c) => {
     return c.json({ error: 'Too many attempts. Try again later.' }, 429)
   }
 
-  const body = await c.req.json<{ phone?: string; name?: string; password?: string }>().catch(() => null)
+  const body = await c.req
+    .json<{ phone?: string; name?: string; password?: string }>()
+    .catch(() => null)
   if (!body) return c.json({ error: 'Invalid body' }, 400)
 
   const phone = normalizePhone(body.phone ?? '')
@@ -41,7 +43,11 @@ auth.post('/signup', async (c) => {
     return c.json({ error: `Password must be at least ${MIN_PASSWORD} characters` }, 400)
   }
 
-  const existing = await db(c.env.DB).select({ id: users.id }).from(users).where(eq(users.phone, phone)).limit(1)
+  const existing = await db(c.env.DB)
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.phone, phone))
+    .limit(1)
   if (existing.length) return c.json({ error: 'That number is already registered' }, 409)
 
   const user: User = {

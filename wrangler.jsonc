@@ -9,17 +9,38 @@
   "vars": { "TELEGRAM_BOT_USERNAME": "kharchapecharchabot" },
   "assets": {
     "binding": "ASSETS",
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
   },
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "kharcha-db",
       "database_id": "20f1bedc-582a-4a21-a3d6-1305961772d1",
-      "migrations_dir": "drizzle"
-    }
+      "migrations_dir": "drizzle",
+    },
   ],
-  "r2_buckets": [
-    { "binding": "SHOTS", "bucket_name": "kharcha-shots" }
-  ]
+  "r2_buckets": [{ "binding": "SHOTS", "bucket_name": "kharcha-shots" }],
+  "queues": {
+    "producers": [{ "queue": "kharcha-parse", "binding": "PARSE_QUEUE" }],
+    "consumers": [
+      {
+        "queue": "kharcha-parse",
+        // One screenshot per invocation. Parsing is a per-image call with no
+        // batching win, and a batch of 1 means a slow image cannot hold up the
+        // ack for the rest of its batch.
+        "max_batch_size": 1,
+        "max_batch_timeout": 0,
+        // The ceiling that matters is the AI provider's rate limit and D1's
+        // single writer, not Cloudflare's 250. Raise this once there are real
+        // numbers to raise it against.
+        "max_concurrency": 3,
+        "max_retries": 3,
+        "dead_letter_queue": "kharcha-parse-dlq",
+      },
+    ],
+  },
+  // Re-enqueues screenshots whose queue send never landed, and reclaims any
+  // left mid-flight by a consumer that died. Without it a failed send() is an
+  // invisible screenshot that is never parsed.
+  "triggers": { "crons": ["*/5 * * * *"] },
 }

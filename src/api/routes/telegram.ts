@@ -4,7 +4,13 @@ import { db } from '../db'
 import { linkTokens, telegramAlbums, telegramUpdates, users, type User } from '../db/schema'
 import { requireUser } from '../middleware/auth'
 import { storeScreenshot } from '../lib/store'
-import { Telegram, TG_MAX_DOWNLOAD, typeFromPath, type TgMessage, type TgUpdate } from '../lib/telegram'
+import {
+  Telegram,
+  TG_MAX_DOWNLOAD,
+  typeFromPath,
+  type TgMessage,
+  type TgUpdate,
+} from '../lib/telegram'
 import type { AppEnv } from '../types'
 
 const LINK_TTL_MS = 15 * 60 * 1000
@@ -16,11 +22,17 @@ const NOT_LINKED =
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 function formatSize(bytes: number) {
-  return bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.round(bytes / 1024)} KB`
+  return bytes >= 1024 * 1024
+    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
+    : `${Math.round(bytes / 1024)} KB`
 }
 
 async function userForChat(env: Env, chatId: number): Promise<User | null> {
-  const rows = await db(env.DB).select().from(users).where(eq(users.telegramChatId, chatId)).limit(1)
+  const rows = await db(env.DB)
+    .select()
+    .from(users)
+    .where(eq(users.telegramChatId, chatId))
+    .limit(1)
   return rows[0] ?? null
 }
 
@@ -53,7 +65,12 @@ function pickMedia(msg: TgMessage): Media | null {
 /* An album has no "complete" signal, so the first photo posts a reply and the
  * rest edit it. The counter is incremented in one atomic upsert, so exactly one
  * update sees count === 1 and owns the send. */
-async function replyForAlbum(env: Env, tg: Telegram, msg: TgMessage, describe: (n: number) => string) {
+async function replyForAlbum(
+  env: Env,
+  tg: Telegram,
+  msg: TgMessage,
+  describe: (n: number) => string,
+) {
   const conn = db(env.DB)
   const groupId = msg.media_group_id!
   const rows = await conn
@@ -113,14 +130,20 @@ async function handleStart(env: Env, tg: Telegram, msg: TgMessage, text: string)
   const found = await conn.select().from(linkTokens).where(eq(linkTokens.token, payload)).limit(1)
   const token = found[0]
 
-  if (!token) return tg.sendMessage(chatId, 'That link is not valid. Generate a fresh one in Kharcha.')
-  if (token.usedAt) return tg.sendMessage(chatId, 'That link was already used. Generate a fresh one in Kharcha.')
-  if (token.expiresAt < Date.now()) return tg.sendMessage(chatId, 'That link expired. Generate a fresh one in Kharcha.')
+  if (!token)
+    return tg.sendMessage(chatId, 'That link is not valid. Generate a fresh one in Kharcha.')
+  if (token.usedAt)
+    return tg.sendMessage(chatId, 'That link was already used. Generate a fresh one in Kharcha.')
+  if (token.expiresAt < Date.now())
+    return tg.sendMessage(chatId, 'That link expired. Generate a fresh one in Kharcha.')
 
   // telegram_chat_id is unique, so bail before the update rather than on the constraint.
   const owner = await userForChat(env, chatId)
   if (owner && owner.id !== token.userId) {
-    return tg.sendMessage(chatId, 'This Telegram account is already linked to a different Kharcha account.')
+    return tg.sendMessage(
+      chatId,
+      'This Telegram account is already linked to a different Kharcha account.',
+    )
   }
 
   await conn
@@ -145,7 +168,10 @@ async function handleMessage(env: Env, tg: Telegram, msg: TgMessage) {
 
   const media = pickMedia(msg)
   if (!media) {
-    return tg.sendMessage(msg.chat.id, 'Send me a screenshot of a payment and I will save it to Kharcha.')
+    return tg.sendMessage(
+      msg.chat.id,
+      'Send me a screenshot of a payment and I will save it to Kharcha.',
+    )
   }
   if ((media.size ?? 0) > TG_MAX_DOWNLOAD) {
     return tg.sendMessage(msg.chat.id, 'That file is over the 20 MB a bot is allowed to download.')
@@ -165,7 +191,12 @@ async function handleMessage(env: Env, tg: Telegram, msg: TgMessage) {
   const detail = `${result.row.width ?? '?'}×${result.row.height ?? '?'} · ${formatSize(result.row.size)}`
 
   if (msg.media_group_id) {
-    return replyForAlbum(env, tg, msg, (n) => `Saved ${n} screenshot${n === 1 ? '' : 's'} · ${detail}`)
+    return replyForAlbum(
+      env,
+      tg,
+      msg,
+      (n) => `Saved ${n} screenshot${n === 1 ? '' : 's'} · ${detail}`,
+    )
   }
   return tg.sendMessage(msg.chat.id, `Saved ✓  ${detail}`)
 }
@@ -210,16 +241,21 @@ telegram.post('/link-token', requireUser, async (c) => {
   const user = c.get('user')
   // Telegram start payloads allow 1-64 chars of [A-Za-z0-9_-].
   const raw = crypto.getRandomValues(new Uint8Array(24))
-  const token = btoa(String.fromCharCode(...raw)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  const token = btoa(String.fromCharCode(...raw))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
 
   const now = Date.now()
-  await db(c.env.DB).insert(linkTokens).values({
-    token,
-    userId: user.id,
-    createdAt: now,
-    expiresAt: now + LINK_TTL_MS,
-    usedAt: null,
-  })
+  await db(c.env.DB)
+    .insert(linkTokens)
+    .values({
+      token,
+      userId: user.id,
+      createdAt: now,
+      expiresAt: now + LINK_TTL_MS,
+      usedAt: null,
+    })
 
   return c.json({
     url: `https://t.me/${c.env.TELEGRAM_BOT_USERNAME}?start=${token}`,

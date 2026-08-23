@@ -1,5 +1,6 @@
 import { db } from '../db'
 import { screenshots, type Screenshot } from '../db/schema'
+import { enqueueParse } from './parse'
 import type { ScreenshotDTO } from '../../shared/types'
 
 const MAX_BYTES = 10 * 1024 * 1024
@@ -27,12 +28,12 @@ export const toDTO = (row: Screenshot): ScreenshotDTO => ({
   createdAt: row.createdAt,
   width: row.width,
   height: row.height,
+  parseStatus: row.parseStatus,
   imageUrl: `/api/screenshots/${row.id}/image`,
 })
 
 export type StoreResult =
-  | { ok: true; row: Screenshot }
-  | { ok: false; status: 400 | 413 | 415; error: string }
+  { ok: true; row: Screenshot } | { ok: false; status: 400 | 413 | 415; error: string }
 
 /** Shared by the API upload route and the server-side share-target fallback. */
 export async function storeScreenshot(
@@ -63,9 +64,25 @@ export async function storeScreenshot(
     width: dimensions?.width ?? null,
     height: dimensions?.height ?? null,
     createdAt: Date.now(),
+    parseStatus: 'pending',
+    parseStatusAt: Date.now(),
+    parseAttempts: 0,
+    parseError: null,
   }
 
   await env.SHOTS.put(row.r2Key, buffer, { httpMetadata: { contentType } })
+  // Enqueue only after the row is committed -- the consumer looks the
+  // screenshot up by id, and can beat the insert otherwise.
   await db(env.DB).insert(screenshots).values(row)
+
+  /* A failed send must not fail the upload: the bytes and the row are already
+   * safe, and losing the user's screenshot to punish a queue blip would be
+   * absurd. The row stays 'pending' and the cron sweep re-enqueues it. */
+  try {
+    await enqueueParse(env, row.id)
+  } catch (err) {
+    console.error('enqueue failed, leaving for the sweep', row.id, err)
+  }
+
   return { ok: true, row }
 }

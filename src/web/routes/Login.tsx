@@ -23,7 +23,10 @@ export default function Login() {
       footer={
         <>
           No account?{' '}
-          <Link to="/signup" className="font-medium text-primary underline-offset-4 hover:underline">
+          <Link
+            to="/signup"
+            className="text-primary font-medium underline-offset-4 hover:underline"
+          >
             Create one
           </Link>
         </>

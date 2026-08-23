@@ -6,10 +6,7 @@
   "start_url": "/?src=pwa",
   "scope": "/",
   "display": "standalone",
-  "display_override": [
-    "standalone",
-    "minimal-ui"
-  ],
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#0f1020",
   "theme_color": "#0f1020",
@@ -44,20 +41,11 @@
       "files": [
         {
           "name": "image",
-          "accept": [
-            "image/*",
-            "image/png",
-            "image/jpeg",
-            "image/webp",
-            "image/heic"
-          ]
+          "accept": ["image/*", "image/png", "image/jpeg", "image/webp", "image/heic"]
         },
         {
           "name": "file",
-          "accept": [
-            "application/pdf",
-            "*/*"
-          ]
+          "accept": ["application/pdf", "*/*"]
         }
       ]
     }
@@ -66,13 +54,7 @@
     {
       "action": "/?handler=file",
       "accept": {
-        "image/*": [
-          ".png",
-          ".jpg",
-          ".jpeg",
-          ".webp",
-          ".heic"
-        ]
+        "image/*": [".png", ".jpg", ".jpeg", ".webp", ".heic"]
       }
     }
   ],

@@ -4,6 +4,8 @@ import screenshots from './routes/screenshots'
 import telegram from './routes/telegram'
 import { currentUser } from './lib/session'
 import { storeScreenshot } from './lib/store'
+import { handleParseBatch, sweepStalledParses } from './queue'
+import type { ParseMessage } from './lib/parse'
 import type { AppEnv } from './types'
 
 const app = new Hono<AppEnv>()
@@ -35,4 +37,13 @@ app.post('/share-target', async (c) => {
 
 app.all('*', (c) => c.env.ASSETS.fetch(c.req.raw))
 
-export default app
+/* The parse consumer rides on this same Worker rather than a separate one. It
+ * keeps `wrangler dev` simulating the whole producer -> queue -> consumer loop
+ * in one session, which is worth more right now than isolation. Split it out
+ * when the consumer needs its own cpu_ms, or when its errors start affecting
+ * the site. */
+export default {
+  fetch: app.fetch,
+  queue: handleParseBatch,
+  scheduled: (_controller, env) => sweepStalledParses(env),
+} satisfies ExportedHandler<Env, ParseMessage>

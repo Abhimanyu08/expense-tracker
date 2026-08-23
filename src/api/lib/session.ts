@@ -17,12 +17,14 @@ function newSessionId(): string {
 export async function createSession(c: Context<AppEnv>, userId: string): Promise<void> {
   const id = newSessionId()
   const now = Date.now()
-  await db(c.env.DB).insert(sessions).values({
-    id,
-    userId,
-    createdAt: now,
-    expiresAt: now + TTL_MS,
-  })
+  await db(c.env.DB)
+    .insert(sessions)
+    .values({
+      id,
+      userId,
+      createdAt: now,
+      expiresAt: now + TTL_MS,
+    })
   setCookie(c, COOKIE, id, {
     httpOnly: true,
     // Plain http on localhost during dev would reject a Secure cookie.
